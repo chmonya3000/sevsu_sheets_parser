@@ -24,15 +24,12 @@ def get_files_urls(soup):
     return [i.get("href") for i in files]
 
 
-def get_extension(file):
-    """Получение расширение файлаааааа"""
-    i = len(file) - 1
-    extension = ""
-    while file[i] != '.':
-        extension += file[i]
-        i -= 1
-    extension += '.'
-    return "".join(reversed(extension))
+def get_extension(filename: str):
+    """Получение расширение файла"""
+    index = filename.rfind('.')
+    if index < 0:
+        return
+    return filename[index+1:]
     
 
 def get_file(path, name, url, file_path, extension):
