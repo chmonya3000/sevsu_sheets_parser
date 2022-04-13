@@ -25,7 +25,8 @@ def get_files_urls(soup):
 
 
 def get_extension(file):
-    """Получение расширение файлаааааа"""
+    """Получение расширение файла"""
+    index = file.rfind('.')
     i = len(file) - 1
     extension = ""
     while file[i] != '.':
