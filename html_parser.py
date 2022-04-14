@@ -124,7 +124,7 @@ def get_schedule_from_first_semester(soup: Tag) -> list:
     """
     indexes = get_semester_index(soup)
     if len(indexes) == 2:
-        return get_files_url(tag)[:indexes[-1] - indexes[0] - 1]
+        return get_files_url(soup)[:indexes[-1] - indexes[0] - 1]
     return []
 
 
@@ -141,13 +141,13 @@ def get_schedule_from_second_semester(soup: Tag) -> list:
     """
     indexes = get_semester_index(soup)
     if len(indexes) == 2:
-        return get_files_url(tag)[indexes[-1] - 1:]
+        return get_files_url(soup)[indexes[-1] - 1:]
     elif len(indexes) == 1:
-        return get_files_url(tag)[indexes[0] + 1:]
+        return get_files_url(soup)[indexes[0] + 1:]
     return []
 
 
-def check_response(response : int) -> Boolean:
+def check_response(response: int) -> Boolean:
     """! Check if SevSU server is responsing
 
     Этот метод используется для проверки работоспособности сайта
@@ -157,6 +157,7 @@ def check_response(response : int) -> Boolean:
     @return Возвращает True если ошибок с ответом от сервера нет
     """
     return True if response == 200 else False
+
 
 def main():
     """! Function to test and debug code
@@ -175,7 +176,7 @@ def main():
             name = get_institute_name(tag)
             a = [BASE_URL + link for link in get_schedule_from_second_semester(tag)]
         if a:
-            for index, item  in enumerate(a):
+            for index, item in enumerate(a):
                 path = utils.transliteration_to_en_from_ru(name)
                 system.save_file(path, str(index), item, utils.get_extension(item))
 
