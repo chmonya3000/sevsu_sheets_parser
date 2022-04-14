@@ -1,3 +1,31 @@
+"""! @brief Методы для работы с ОС."""
+##
+# @file system.py
+#
+# @brief Все связанное с взаимодействием с файлами системы.
+#
+# @section description_system Описание
+# Предоставление методов для работы с файловой системой ОС
+#
+# @section libraries_system Модули
+# - os стандартная библиотека
+#   - Получение возможности для взаимодействия с ОС
+# - requests
+#   - Получение содержимого с html документа.
+#
+# @section notes_system Заметки
+#
+# @section list_of_changes_system Список изменений
+#   - Файл создан Савинов В.В. 14/04/2022
+#   - Добавлена doxygen документация Нестеренко А.И. 14/04/2022 
+#
+# @section author_system Авторы
+# - Савинов В.В.
+# - Нестеренко А.И.
+#
+# Copyright (c) 2022 ИРИБ.  All rights reserved.
+
+
 import os
 import requests
 

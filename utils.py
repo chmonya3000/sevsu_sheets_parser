@@ -1,3 +1,31 @@
+"""! @brief Утилиты, которые могут понадобиться при работе"""
+##
+# @file utils.py
+#
+# @brief Методы, которые невозможно нормально группировать
+#
+# @section description_utils Описание
+# Сборная солянка из разных методов
+#
+# @section libraries_utils Модули
+# - transliterate
+#   - Транслитерация слов на английский язык
+# - datetime
+#   - Получение текущего времени системы
+#
+# @section notes_utils Заметки
+#
+# @section list_of_changes_utils Список изменений
+#   - Файл создан Савинов В.В. 14/04/2022
+#   - Добавлена doxygen документация Нестеренко А.И. 14/04/2022 
+#
+# @section author_utils Авторы
+# - Савинов В.В.
+# - Нестеренко А.И.
+#
+# Copyright (c) 2022 ИРИБ.  All rights reserved.
+
+
 import transliterate
 from datetime import datetime
 

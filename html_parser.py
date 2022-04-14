@@ -1,3 +1,33 @@
+"""! @brief Парсер html страницы расписания."""
+##
+# @file html_parser.py
+#
+# @brief Парсинг файлов расписания.
+#
+# @section description_html_parser Описание
+# Предоставление методов для удобного парсинга страницы с расписанием
+#
+# @section libraries_html_parser Модули
+# - requests
+#   - Получение содержимого с html документа.
+# - bs4
+#   - Парсинг html документа
+#
+# @section notes_html_parser Заметки
+# - @maybe_next_time используется для обозначения методов,
+#       которые могут получить новый функционал в будущем
+#
+# @section list_of_changes_html-parser Список изменений
+#   - Файл создан Савинов В.В. 14/04/2022
+#   - Добавлена doxygen документация Нестеренко А.И. 14/04/2022 
+#
+# @section author_html_parser Авторы
+# - Савинов В.В.
+# - Нестеренко А.И.
+#
+# Copyright (c) 2022 ИРИБ.  All rights reserved.
+
+
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag, ResultSet
@@ -115,18 +145,26 @@ def get_schedule_from_second_semester(soup: Tag) -> list:
 
 
 
+def main():
+    """! Function to test and debug code
 
-base = get_base_block(URL, HEADERS)
-print(base)
-system.make_directory('General')
-for tag in base:
-    if utils.get_current_semester() == 1:
-        name = get_institute_name(tag)
-        a = [BASE_URL + link for link in get_schedule_from_first_semester(tag)]
-    else:
-        name = get_institute_name(tag)
-        a = [BASE_URL + link for link in get_schedule_from_second_semester(tag)]
-    if a:
-        for index, item  in enumerate(a):
-            path = utils.transliteration_to_en_from_ru(name)
-            system.save_file(path, str(index), item, utils.get_extension(item))
+    Эта функция используется для отладки написанного кода
+    """
+    base = get_base_block(URL, HEADERS)
+    print(base)
+    system.make_directory('General')
+    for tag in base:
+        if utils.get_current_semester() == 1:
+            name = get_institute_name(tag)
+            a = [BASE_URL + link for link in get_schedule_from_first_semester(tag)]
+        else:
+            name = get_institute_name(tag)
+            a = [BASE_URL + link for link in get_schedule_from_second_semester(tag)]
+        if a:
+            for index, item  in enumerate(a):
+                path = utils.transliteration_to_en_from_ru(name)
+                system.save_file(path, str(index), item, utils.get_extension(item))
+
+
+if __name__ == '__main__':
+    main()
