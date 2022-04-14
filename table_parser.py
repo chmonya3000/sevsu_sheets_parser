@@ -3,6 +3,7 @@ import utils
 import xlrd
 
 
+
 def get_sheet_names_from_table(filename: str) -> list:
     """Имена всех листов в документе Excel"""
     return pd.ExcelFile(filename).sheet_names
