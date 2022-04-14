@@ -19,7 +19,8 @@
 #
 # @section list_of_changes_html-parser Список изменений
 #   - Файл создан Савинов В.В. 14/04/2022
-#   - Добавлена doxygen документация Нестеренко А.И. 14/04/2022 
+#   - Добавлена doxygen документация Нестеренко А.И. 14/04/2022
+#   - Добавлена функция проверки ответа от сервера Нестеренко А.И. 14/04/2022 
 #
 # @section author_html_parser Авторы
 # - Савинов В.В.
@@ -28,6 +29,7 @@
 # Copyright (c) 2022 ИРИБ.  All rights reserved.
 
 
+from xmlrpc.client import Boolean
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag, ResultSet
@@ -54,6 +56,8 @@ def get_base_block(url: str, headers: dict) -> ResultSet:
     @return Все блоки институтов с классом "su-spoiler"
     """
     html = requests.get(url=url, headers=headers)
+    if not check_response(html.status_code):
+        return None
     soup = BeautifulSoup(html.text, "lxml")
     return soup.find("div", class_="su-column-content").find_all("div", class_="su-spoiler")
 
@@ -108,7 +112,7 @@ def get_semester_index(soup: Tag) -> list:
 
 
 def get_schedule_from_first_semester(soup: Tag) -> list:
-    """ Get shedule for 1 semester 
+    """! Get shedule for 1 semester 
     
     Этот метод используется для получения расписания института на 1 семестр
     
@@ -125,7 +129,7 @@ def get_schedule_from_first_semester(soup: Tag) -> list:
 
 
 def get_schedule_from_second_semester(soup: Tag) -> list:
-    """ Get shedule for 2 semester 
+    """! Get shedule for 2 semester 
     
     Этот метод используется для получения расписания института на 2 семестр
     
@@ -143,7 +147,16 @@ def get_schedule_from_second_semester(soup: Tag) -> list:
     return []
 
 
+def check_response(response : int) -> Boolean:
+    """! Check if SevSU server is responsing
 
+    Этот метод используется для проверки работоспособности сайта
+
+    @param response Код ответа от сервера
+
+    @return Возвращает тру если ошибок с ответом от сервера нет
+    """
+    return True if response == 200 else False
 
 def main():
     """! Function to test and debug code
@@ -151,7 +164,8 @@ def main():
     Эта функция используется для отладки написанного кода
     """
     base = get_base_block(URL, HEADERS)
-    print(base)
+    if base == None:
+        return None
     system.make_directory('General')
     for tag in base:
         if utils.get_current_semester() == 1:
