@@ -3,12 +3,25 @@ from datetime import datetime
 
 
 def transliteration_to_en_from_ru(string: str) -> str:
-    """Транслитерация букв с русских на анлгийские"""
+    """! Transliterate word from russian to english
+
+    Этот метод используется для транслитерации строки
+    с русского на анлгийский
+
+    @param string Строка на русском языке
+
+    @return Строка на английском языке
+    """
     return transliterate.translit(string, 'ru', reversed=True)
 
 
 def get_current_semester() -> int:
-    """Текущий семестр обучения"""
+    """! Auto choose current semestr
+
+    Этот метод используется для определения текущего семестра обучения
+    
+    @return Числовое значение текущего семестра
+    """
     month = datetime.now().month
     if 1 < month < 9:
         return 2
@@ -16,7 +29,13 @@ def get_current_semester() -> int:
 
 
 def get_extension(filename: str) -> str:
-    """Получение расширения файла"""
+    """! Get file extension from link 
+    Этот метод используется для получения расширения файла
+    
+    @param filename Ссылка на файл
+
+    @return Расширение файла без точки
+    """
     index = filename.rfind('.')
     if index < 0:
         return None
