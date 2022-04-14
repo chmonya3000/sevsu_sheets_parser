@@ -154,7 +154,7 @@ def check_response(response : int) -> Boolean:
 
     @param response Код ответа от сервера
 
-    @return Возвращает тру если ошибок с ответом от сервера нет
+    @return Возвращает True если ошибок с ответом от сервера нет
     """
     return True if response == 200 else False
 
