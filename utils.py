@@ -67,4 +67,20 @@ def get_extension(filename: str) -> str:
     index = filename.rfind('.')
     if index < 0:
         return None
-    return filename[index+1:]
+    return filename[index + 1:]
+
+
+def update_format_date(date: str) -> str:
+    """Приведение даты из файла к общему виду для дальнейшей обработки"""
+    if date[-1] == '.':
+        date += f'{datetime.now().year}'
+    else:  # date[-1].isdigit()
+        index = date.rfind('.')
+        date = f'{date[:index]}{datetime.now().year}'
+    return date
+
+
+def get_key_difference_date(date: str) -> int:
+    """Нахождение разницы между текущей датой и даты начала учебной недели"""
+    study_week_date = datetime.strptime(date, '%d.%m.%Y').date()
+    return (datetime.now().date() - study_week_date).days
