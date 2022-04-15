@@ -58,3 +58,14 @@ def save_file(path: str, name: str, url: str, extension: str) -> None:
     file = requests.get(url)
     f.write(file.content)
     f.close()
+
+
+def get_path_schedule_files() -> list:
+    initial_path = f'{os.getcwd()}\\General\\'
+    os.chdir(initial_path)
+    final_paths = []
+    for root, dirs, files in os.walk(".", topdown=False):
+        for file in files:
+            n = initial_path + os.path.join(root, file)[2:]
+            final_paths.append(n)
+    return final_paths
