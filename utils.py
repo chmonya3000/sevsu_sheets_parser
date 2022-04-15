@@ -71,12 +71,19 @@ def get_extension(filename: str) -> str:
 
 
 def update_format_date(date: str) -> str:
-    """Приведение даты из файла к общему виду для дальнейшей обработки"""
+    """! Formating date
+
+    Приведение даты из файла к общему виду для дальнейшей обработки
+
+    @param date Строка с датой из таблицы
+
+    @return Дата в виде DD:MM:YY
+    """
     if date[-1] == '.':
         date += f'{datetime.now().year}'
     else:  # date[-1].isdigit()
         index = date.rfind('.')
-        date = f'{date[:index]}{datetime.now().year}'
+        date = f'{date[:index]}.{datetime.now().year}'
     return date
 
 
@@ -84,3 +91,7 @@ def get_key_difference_date(date: str) -> int:
     """Нахождение разницы между текущей датой и даты начала учебной недели"""
     study_week_date = datetime.strptime(date, '%d.%m.%Y').date()
     return (datetime.now().date() - study_week_date).days
+
+if __name__ == '__main__':
+    a = update_format_date('25 нед.  14.02- 19.02.22 г')
+    print(a)
