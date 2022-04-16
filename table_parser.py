@@ -122,8 +122,26 @@ def info_column_index(dataframe: pd.DataFrame) -> int:
     return initial_column
 
 
+def get_date_indexes(dataframe: pd.DataFrame) -> list:
+    rows, columns = get_table_size(dataframe)
+    result = []
+    for i in range(columns):
+        try:
+            group_indexes = df.iloc[:, i].index[
+                df.iloc[:, i].str.replace(' ', '').str.contains(r'\d{2}\.\d{2}', regex=True, na=False)]
+            if group_indexes.tolist():
+                result += group_indexes.tolist()
+                break
+        except AttributeError:
+            continue
+        except IndexError:
+            continue
+    result += [rows]
+    return result
+
+
 if __name__ == '__main__':
-    file = r'C:\Users\b402\Documents\sevsu_sheets_parser\General\Gumanitarno-pedagogicheskij institut\0.xlsx'
+    file = r'C:\Users\bobbert\Documents\Pythonist\sevsu_sheets_parser\General\Gumanitarno-pedagogicheskij institut\0.xlsx'
     sheets = get_sheet_names_from_table(file)
     for sheet in sheets:
         df = read_raw_excel_file(file, sheet)
@@ -132,8 +150,16 @@ if __name__ == '__main__':
         initial_column = info_column_index(df.head(20))
         df.drop(range(date_index), axis=0, inplace=True)
         df.drop(range(initial_column), axis=1, inplace=True)
+        df.reset_index(drop=True, inplace=True)
         df.to_excel('test.xlsx', sheet_name='test', header=False, index=False)
-        print(date_index, group_index, initial_column)
+        indexes = get_date_indexes(df)
+        result = df.iloc[indexes[0]:indexes[1], :]
+        for index in range(1, len(indexes)-1):
+            temp = df.iloc[indexes[index]:indexes[index + 1], :]
+            temp.reset_index(drop=True, inplace=True)
+            temp.to_excel(f'test{index}.xlsx', sheet_name='test', header=False, index=True)
+            result = pd.merge(result, temp, right_index=True, left_index=True)
+        result.to_excel('tester.xlsx', sheet_name='test', header=False, index=False)
         break
 
 
