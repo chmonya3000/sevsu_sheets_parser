@@ -1,5 +1,9 @@
+import datetime
+
 import pandas as pd
 import utils
+import xlrd
+import openpyxl
 
 
 def get_sheet_names_from_table(filename: str) -> list:
@@ -14,7 +18,7 @@ def get_table_size(dataframe: pd.DataFrame) -> tuple:
 
 
 def read_raw_excel_file(filename: str, sheet_name: str) -> pd.DataFrame:
-    """Считывание информации из таблицы"""
+    """Считывание таблицы Excel без форматирования"""
     extension = utils.get_extension(filename)
     if extension == 'xlsx':
         return pd.read_excel(filename, sheet_name=sheet_name, header=None, engine='openpyxl')
@@ -34,7 +38,7 @@ def date_row_index(dataframe: pd.DataFrame) -> int:
     date_index = 0
     for i in range(columns):
         try:
-            date_index = df.iloc[:, i].index[df.iloc[:, i].str.replace(' ', '').str.contains(r'\d{2}\.\d{2}', regex=True, na=False)][0]
+            date_index = dataframe.iloc[:, i].index[dataframe.iloc[:, i].str.replace(' ', '').str.contains(r'\d{2}\.\d{2}', regex=True, na=False)][0]
             break
         except AttributeError:
             continue
@@ -72,6 +76,7 @@ def info_column_index(dataframe: pd.DataFrame) -> int:
 
 
 def get_date_indexes(dataframe: pd.DataFrame) -> list:
+    """Индексы дат, для разделения таблицы"""
     rows, columns = get_table_size(dataframe)
     result = []
     for i in range(columns):
@@ -85,31 +90,81 @@ def get_date_indexes(dataframe: pd.DataFrame) -> list:
             continue
         except IndexError:
             continue
-    result += [rows]
+    #if len(result) > 1:
+    #    result += [rows]
+    #else:
+    #    result += ['xyu']
     return result
 
 
+def read_formatting_excel_file_xls(filename: str, sheet_name: str) -> pd.DataFrame:
+    """Заполнение объединенных ячеек таблицы Excel расширения xls"""
+    dataframe = read_raw_excel_file(filename=filename, sheet_name=sheet_name)
+    rows, columns = get_table_size(dataframe)
+    date_index = date_row_index(dataframe.head(20))
+    workbook = xlrd.open_workbook(filename, formatting_info=True)
+    sheet = workbook.sheet_by_name(sheet_name)
+    for i, j, k, m in sheet.merged_cells:
+        for row in range(i - 1, j - 1):
+            for column in range(k, m):
+                if date_index <= i <= rows:
+                    if sheet.cell_value(i, k):
+                        dataframe.loc[row + 1, column] = sheet.cell_value(i, k)
+    return dataframe
+
+
+def delete_uninformative_table_information(dataframe: pd.DataFrame, chunk=20) -> pd.DataFrame:
+    """Удаление неинформативных столбцов и строк"""
+    date_index = date_row_index(dataframe.head(chunk))
+    group_index = group_row_index(dataframe.head(chunk))
+    initial_column = info_column_index(dataframe.head(chunk))
+    dataframe = dataframe.drop(range(date_index), axis=0)
+    dataframe = dataframe.drop(range(initial_column), axis=1)
+    days = dataframe.iloc[2, :].index[dataframe.iloc[2, :].str.replace(' ', '').str.lower() == 'понедельник'][1:]
+    dataframe = dataframe.drop(days, axis=1)
+    pairs = dataframe.iloc[2, :].index[dataframe.iloc[2, :].str.replace(' ', '').str.lower() == '1пара'][1:]
+    dataframe = dataframe.drop(pairs, axis=1)
+    pairs = dataframe.iloc[2, :].index[dataframe.iloc[2, :] == datetime.time(8, 30)][1:]
+    dataframe = dataframe.drop(pairs, axis=1)
+    dataframe = dataframe.reset_index(drop=True)
+    return dataframe
+
+
+def get_week_start_date(date: str, difference=-6) -> str:
+    """Дата начала учебной недели"""
+    date = datetime.datetime.strptime(date, '%d.%m.%Y')
+    date = date + datetime.timedelta(days=difference)
+    date = date.strftime('%d.%m.%Y')
+    return date
+
+
+def update_informative_table_information(dataframe: pd.DataFrame) -> pd.DataFrame:
+    """Обновление информативных столбцов в таблице"""
+    dataframe.iloc[0, :] = dataframe.iloc[0, :].fillna(method='ffill')
+    dataframe.iloc[1, :] = dataframe.iloc[1, :].fillna(method='ffill')
+    dataframe.iloc[:, 0] = pd.Series([day.replace(' ', '').lower() if not pd.isna(day) else day for day in dataframe.iloc[:, 0].values])
+    dataframe.iloc[:, 1] = pd.Series([day.replace(' ', '').lower() if not pd.isna(day) else day for day in dataframe.iloc[:, 1].values])
+    dataframe.iloc[:, 2] = pd.Series([day.strftime('%H:%M') if not pd.isna(day) else day for day in dataframe.iloc[:, 2].values])
+    return dataframe
+
+
 if __name__ == '__main__':
-    file = r'C:\Users\bobbert\Documents\Pythonist\sevsu_sheets_parser\General\Gumanitarno-pedagogicheskij institut\0.xlsx'
+    file = r'C:\Users\bobbert\Documents\Pythonist\sevsu_sheets_parser\General\Gumanitarno-pedagogicheskij institut\1.xls'
     sheets = get_sheet_names_from_table(file)
     for sheet in sheets:
-        df = read_raw_excel_file(file, sheet)
-        date_index = date_row_index(df.head(20))
-        group_index = group_row_index(df.head(20))
-        initial_column = info_column_index(df.head(20))
-        df.drop(range(date_index), axis=0, inplace=True)
-        df.drop(range(initial_column), axis=1, inplace=True)
-        df.reset_index(drop=True, inplace=True)
+        df = read_formatting_excel_file_xls(file, sheet)
+        df.to_excel('test0.xlsx', sheet_name='test', header=False, index=False)
+        df = delete_uninformative_table_information(df)
+        df = update_informative_table_information(df)
         df.to_excel('test.xlsx', sheet_name='test', header=False, index=False)
         indexes = get_date_indexes(df)
-        result = df.iloc[indexes[0]:indexes[1], :]
-        for index in range(1, len(indexes)-1):
-            temp = df.iloc[indexes[index]:indexes[index + 1], :]
-            temp.reset_index(drop=True, inplace=True)
-            temp.to_excel(f'test{index}.xlsx', sheet_name='test', header=False, index=True)
-            result = pd.merge(result, temp, right_index=True, left_index=True)
-        result.to_excel('tester.xlsx', sheet_name='test', header=False, index=False)
+        print(indexes)
+        #result = df.iloc[indexes[0]:indexes[1], :]
+        #for index in range(1, len(indexes)-1):
+        #    temp = df.iloc[indexes[index]:indexes[index + 1], :]
+        #    temp.reset_index(drop=True, inplace=True)
+        #    temp.to_excel(f'test{index}.xlsx', sheet_name='test', header=False, index=True)
+        #    result = pd.merge(result, temp, right_index=True, left_index=True)
+        #
+        #result.to_excel('tester1.xlsx', sheet_name='test', header=False, index=False)
         break
-
-
-
