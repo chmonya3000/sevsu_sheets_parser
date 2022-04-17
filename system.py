@@ -18,6 +18,8 @@
 # @section list_of_changes_system Список изменений
 #   - Файл создан Савинов В.В. 14/04/2022
 #   - Добавлена doxygen документация Нестеренко А.И. 14/04/2022 
+#   - Добавлены методы Савинов В.В. 15/04/2022:
+#       - get_path_schedule_files
 #
 # @section author_system Авторы
 # - Савинов В.В.
@@ -61,6 +63,12 @@ def save_file(path: str, name: str, url: str, extension: str) -> None:
 
 
 def get_path_schedule_files() -> list:
+    """! Get full path to all shedule files
+
+    Получение полного путя до каждого расписания
+    
+    @return Список путей до каждого Excel файла
+    """
     initial_path = f'{os.getcwd()}\\General\\'
     os.chdir(initial_path)
     final_paths = []
@@ -69,3 +77,14 @@ def get_path_schedule_files() -> list:
             n = initial_path + os.path.join(root, file)[2:]
             final_paths.append(n)
     return final_paths
+
+
+def main():
+    """! Function to test and debug code
+
+    Эта функция используется для отладки написанного кода
+    """
+    print(get_path_schedule_files())
+
+if __name__ == '__main__':
+    main()

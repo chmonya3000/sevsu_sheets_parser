@@ -9,8 +9,8 @@
 # @section libraries_table_parser Модули
 # - pandas
 #   - Парсинг таблиц
-# - xlrd
-#   - Интсрумент для чтения xls фалйов
+# - xlrd openpyxl
+#   - Интсрументы для чтения xls и xlsx фалйов
 # - datetime
 #   - Получение текущего времени
 #
@@ -19,6 +19,16 @@
 # @section list_of_changes_table_parser Список изменений
 #   - Файл создан Савинов В.В. 14/04/2022
 #   - Добавлена doxygen документация Нестеренко А.И. 15/04/2022
+#   - Добавлены методы Савинов В.В. 17/04/2022:
+#       - parse_date_study_week
+#       - date_row_index
+#       - group_row_index
+#       - info_column_index
+#       - get_date_indexes
+#       - read_formatting_excel_file_xls
+#       - delete_uninformative_table_information
+#       - get_week_start_date
+#       - update_informative_table_information
 #
 # @section author_utils Авторы
 # - Савинов В.В.
@@ -74,7 +84,15 @@ def read_raw_excel_file(filename: str, sheet_name: str) -> pd.DataFrame:
     return pd.read_excel(filename, sheet_name=sheet_name, header=None, engine='xlrd')
 
 
-def parse_date_study_week(dat : str) -> list:
+def parse_date_study_week(date : str) -> list:
+    """! Get list of study week
+
+    Получение дат в удовлетворимом виде
+
+    @param  date Строка с датами
+
+    @return Список дат учебных недель
+    """
     date = [date for date in date.split('  ') if date.replace(' ', '')]
     date = [date.split('-')[0].replace(' ', '') for date in date]
     date = [utils.update_format_date(date) for date in date]
@@ -82,7 +100,13 @@ def parse_date_study_week(dat : str) -> list:
 
 
 def date_row_index(dataframe: pd.DataFrame) -> int:
-    """Индекс строки, содержющей даты занятия (с данного индекса начинается расписание)"""
+    """! Get date row index
+    Индекс строки, содержющей даты занятия (с данного индекса начинается расписание)
+    
+    @param dataframe Excel таблица
+
+    @return Индекс строки с датой
+    """
     columns = get_table_size(dataframe)[1]
     date_index = 0
     for i in range(columns):
@@ -97,7 +121,14 @@ def date_row_index(dataframe: pd.DataFrame) -> int:
 
 
 def group_row_index(dataframe: pd.DataFrame) -> int:
-    """Индекс строки, содержющей группы, у которых прововодятся занятия"""
+    """! Get study group row index
+
+    Индекс строки, содержющей группы, у которых прововодятся занятия
+
+    @param dataframe Excel таблица
+
+    @return Индекс строки с названиями учебных групп
+    """
     columns = get_table_size(dataframe)[1]
     group_index = 0
     for i in range(columns):
@@ -112,7 +143,14 @@ def group_row_index(dataframe: pd.DataFrame) -> int:
 
 
 def info_column_index(dataframe: pd.DataFrame) -> int:
-    """Индекс столбца, с которого начинается расписание"""
+    """! Get start column index
+
+    Индекс столбца, с которого начинается расписание
+    
+    @param dataframe Excel таблица
+
+    @return Индекс столбца начала таблицы с расписанием
+    """
     columns = get_table_size(dataframe)[1]
     initial_column = 0
     for i in range(columns):
@@ -125,7 +163,14 @@ def info_column_index(dataframe: pd.DataFrame) -> int:
 
 
 def get_date_indexes(dataframe: pd.DataFrame) -> list:
-    """Индексы дат, для разделения таблицы"""
+    """! Get indexes of all study week in sheet
+
+    Индексы дат, для разделения таблицы
+    
+    @param dataframe Excel таблица
+
+    @return Список индексов с датами учебных недель
+    """
     rows, columns = get_table_size(dataframe)
     result = []
     for i in range(columns):
@@ -147,7 +192,15 @@ def get_date_indexes(dataframe: pd.DataFrame) -> list:
 
 
 def read_formatting_excel_file_xls(filename: str, sheet_name: str) -> pd.DataFrame:
-    """Заполнение объединенных ячеек таблицы Excel расширения xls"""
+    """! Fill same cells in xls file
+
+    Заполнение объединенных ячеек таблицы Excel расширения xls
+    
+    @param filename Имя файла
+    @param sheet_name Имя листа
+
+    @return Excel таблица с разделенными ячейками, что были объединены в одну
+    """
     dataframe = read_raw_excel_file(filename=filename, sheet_name=sheet_name)
     rows, columns = get_table_size(dataframe)
     date_index = date_row_index(dataframe.head(20))
@@ -163,7 +216,15 @@ def read_formatting_excel_file_xls(filename: str, sheet_name: str) -> pd.DataFra
 
 
 def delete_uninformative_table_information(dataframe: pd.DataFrame, chunk=20) -> pd.DataFrame:
-    """Удаление неинформативных столбцов и строк"""
+    """! Remove useless row and column
+    
+    Удаление неинформативных столбцов и строк
+    
+    @param dataframe Excel таблица
+    @param chunk Количество ячеек для просмотра
+
+    @return Excel таблица без ненужной информации
+    """
     date_index = date_row_index(dataframe.head(chunk))
     group_index = group_row_index(dataframe.head(chunk))
     initial_column = info_column_index(dataframe.head(chunk))
@@ -180,7 +241,15 @@ def delete_uninformative_table_information(dataframe: pd.DataFrame, chunk=20) ->
 
 
 def get_week_start_date(date: str, difference=-6) -> str:
-    """Дата начала учебной недели"""
+    """! Get week start date
+    
+    Дата начала учебной недели
+    
+    @param date Дата
+    @param difference Разница между принимаемой и возвращаемой датой(в днях)
+
+    @return Дата с разницей во времени на difference дней
+    """
     date = datetime.datetime.strptime(date, '%d.%m.%Y')
     date = date + datetime.timedelta(days=difference)
     date = date.strftime('%d.%m.%Y')
@@ -188,7 +257,14 @@ def get_week_start_date(date: str, difference=-6) -> str:
 
 
 def update_informative_table_information(dataframe: pd.DataFrame) -> pd.DataFrame:
-    """Обновление информативных столбцов в таблице"""
+    """! Update informative column
+
+    Обновление информативных столбцов в таблице
+    
+    @param dataframe Excel таблица
+    
+    @return Отформотированная Excel таблица
+    """
     dataframe.iloc[0, :] = dataframe.iloc[0, :].fillna(method='ffill')
     dataframe.iloc[1, :] = dataframe.iloc[1, :].fillna(method='ffill')
     dataframe.iloc[:, 0] = pd.Series([day.replace(' ', '').lower() if not pd.isna(day) else day for day in dataframe.iloc[:, 0].values])
@@ -197,10 +273,11 @@ def update_informative_table_information(dataframe: pd.DataFrame) -> pd.DataFram
     return dataframe
 
 def main():
-    # a = get_sheet_names_from_table("1.xlsx")
-    # b = read_raw_excel_file("1.xlsx", a[0])
-    # print(b)
-    file = r'C:\Users\bobbert\Documents\Pythonist\sevsu_sheets_parser\General\Gumanitarno-pedagogicheskij institut\1.xls'
+    """! Function to test and debug code
+
+    Эта функция используется для отладки написанного кода
+    """
+    file = r'General\Gumanitarno-pedagogicheskij institut\1.xls'
     sheets = get_sheet_names_from_table(file)
     for sheet in sheets:
         df = read_formatting_excel_file_xls(file, sheet)
@@ -210,14 +287,14 @@ def main():
         df.to_excel('test.xlsx', sheet_name='test', header=False, index=False)
         indexes = get_date_indexes(df)
         print(indexes)
-        #result = df.iloc[indexes[0]:indexes[1], :]
-        #for index in range(1, len(indexes)-1):
-        #    temp = df.iloc[indexes[index]:indexes[index + 1], :]
-        #    temp.reset_index(drop=True, inplace=True)
-        #    temp.to_excel(f'test{index}.xlsx', sheet_name='test', header=False, index=True)
-        #    result = pd.merge(result, temp, right_index=True, left_index=True)
-        #
-        #result.to_excel('tester1.xlsx', sheet_name='test', header=False, index=False)
+        result = df.iloc[indexes[0]:indexes[1], :]
+        for index in range(1, len(indexes)-1):
+            temp = df.iloc[indexes[index]:indexes[index + 1], :]
+            temp.reset_index(drop=True, inplace=True)
+            temp.to_excel(f'test{index}.xlsx', sheet_name='test', header=False, index=True)
+            result = pd.merge(result, temp, right_index=True, left_index=True)
+        
+        result.to_excel('tester1.xlsx', sheet_name='test', header=False, index=False)
         break
 
 if __name__ == '__main__':

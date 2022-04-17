@@ -1,3 +1,25 @@
+"""! @brief Основной файл для работы программы"""
+##
+# @file main.py
+#
+# @brief Основной файл для работы программы.
+#
+# @section description_main Описание
+# Файл, который собрал в себе все методы для парсинга расписания.
+#
+# @section libraries_main Модули
+#
+# @section notes_main Заметки
+#
+# @section list_of_changes_main Список изменений
+#   - Файл создан Нестеренко А.И. 14/04/2022
+#
+# @section author_main Авторы
+# - Савинов В.В.
+# - Нестеренко А.И.
+#
+# Copyright (c) 2022 ИРИБ.  All rights reserved.
+
 from html_parser import get_base_block, get_institute_name, get_files_url, get_schedule_from_first_semester, get_schedule_from_second_semester
 from table_parser import  get_sheet_names_from_table
 from utils import get_extension, get_current_semester
@@ -9,6 +31,10 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gec
 BASE_URL = "https://www.sevsu.ru"
 
 def main():
+    """! Function to test and debug code
+
+    Эта функция используется для отладки написанного кода
+    """
     base = get_base_block(URL, HEADERS)
 
     for item in base:

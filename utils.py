@@ -18,6 +18,8 @@
 # @section list_of_changes_utils Список изменений
 #   - Файл создан Савинов В.В. 14/04/2022
 #   - Добавлена doxygen документация Нестеренко А.И. 14/04/2022 
+#   - Добавлены методы Савинов В.В. 15/04/2022:
+#       - get_key_difference_date
 #
 # @section author_utils Авторы
 # - Савинов В.В.
@@ -88,10 +90,24 @@ def update_format_date(date: str) -> str:
 
 
 def get_key_difference_date(date: str) -> int:
-    """Нахождение разницы между текущей датой и даты начала учебной недели"""
+    """! Get differenct between date
+
+    Нахождение разницы между текущей датой и даты начала учебной недели
+
+    @param date Дата начала учебной недели
+
+    @return Количество дней между началом учебной недели и нынешним днем
+    """
     study_week_date = datetime.strptime(date, '%d.%m.%Y').date()
     return (datetime.now().date() - study_week_date).days
 
-if __name__ == '__main__':
+def main():
+    """! Function to test and debug code
+
+    Эта функция используется для отладки написанного кода
+    """
     a = update_format_date('25 нед.  14.02- 19.02.22 г')
     print(a)
+
+if __name__ == '__main__':
+    main()
