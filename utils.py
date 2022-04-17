@@ -89,18 +89,6 @@ def update_format_date(date: str) -> str:
     return date
 
 
-def get_key_difference_date(date: str) -> int:
-    """! Get differenct between date
-
-    Нахождение разницы между текущей датой и даты начала учебной недели
-
-    @param date Дата начала учебной недели
-
-    @return Количество дней между началом учебной недели и нынешним днем
-    """
-    study_week_date = datetime.strptime(date, '%d.%m.%Y').date()
-    return (datetime.now().date() - study_week_date).days
-
 def main():
     """! Function to test and debug code
 
@@ -108,6 +96,7 @@ def main():
     """
     a = update_format_date('25 нед.  14.02- 19.02.22 г')
     print(a)
+
 
 if __name__ == '__main__':
     main()
