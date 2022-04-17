@@ -36,10 +36,11 @@
 #
 # Copyright (c) 2022 ИРИБ.  All rights reserved.
 
-import datetime
+from datetime import datetime, timedelta, time
 import pandas as pd
 import utils
 import xlrd
+import numpy as np
 import openpyxl
 
 
@@ -84,7 +85,7 @@ def read_raw_excel_file(filename: str, sheet_name: str) -> pd.DataFrame:
     return pd.read_excel(filename, sheet_name=sheet_name, header=None, engine='xlrd')
 
 
-def parse_date_study_week(date : str) -> list:
+def parse_date_study_week(date: str) -> list:
     """! Get list of study week
 
     Получение дат в удовлетворимом виде
@@ -111,7 +112,8 @@ def date_row_index(dataframe: pd.DataFrame) -> int:
     date_index = 0
     for i in range(columns):
         try:
-            date_index = dataframe.iloc[:, i].index[dataframe.iloc[:, i].str.replace(' ', '').str.contains(r'\d{2}\.\d{2}', regex=True, na=False)][0]
+            date_index = dataframe.iloc[:, i].index[
+                dataframe.iloc[:, i].str.replace(' ', '').str.contains(r'\d{2}\.\d{2}', regex=True, na=False)][0]
             break
         except AttributeError:
             continue
@@ -133,7 +135,8 @@ def group_row_index(dataframe: pd.DataFrame) -> int:
     group_index = 0
     for i in range(columns):
         try:
-            group_index = df.iloc[:, i].index[df.iloc[:, i].str.replace(' ', '').str.contains(r'\-\d{2}\-\d\-', regex=True, na=False)][0]
+            group_index = dataframe.iloc[:, i].index[
+                dataframe.iloc[:, i].str.replace(' ', '').str.contains(r'\-\d{2}\-\d\-', regex=True, na=False)][0]
             break
         except AttributeError:
             continue
@@ -155,7 +158,7 @@ def info_column_index(dataframe: pd.DataFrame) -> int:
     initial_column = 0
     for i in range(columns):
         try:
-            df.iloc[:, i].str.contains(r'\-\d{2}\-\d\-', regex=True, na=False)
+            dataframe.iloc[:, i].str.contains(r'\-\d{2}\-\d\-', regex=True, na=False)
             break
         except AttributeError:
             initial_column += 1
@@ -175,8 +178,8 @@ def get_date_indexes(dataframe: pd.DataFrame) -> list:
     result = []
     for i in range(columns):
         try:
-            group_indexes = df.iloc[:, i].index[
-                df.iloc[:, i].str.replace(' ', '').str.contains(r'\d{2}\.\d{2}', regex=True, na=False)]
+            group_indexes = dataframe.iloc[:, i].index[
+                dataframe.iloc[:, i].str.replace(' ', '').str.contains(r'\d{2}\.\d{2}', regex=True, na=False)]
             if group_indexes.tolist():
                 result += group_indexes.tolist()
                 break
@@ -184,9 +187,9 @@ def get_date_indexes(dataframe: pd.DataFrame) -> list:
             continue
         except IndexError:
             continue
-    #if len(result) > 1:
+    # if len(result) > 1:
     #    result += [rows]
-    #else:
+    # else:
     #    result += ['xyu']
     return result
 
@@ -234,7 +237,7 @@ def delete_uninformative_table_information(dataframe: pd.DataFrame, chunk=20) ->
     dataframe = dataframe.drop(days, axis=1)
     pairs = dataframe.iloc[2, :].index[dataframe.iloc[2, :].str.replace(' ', '').str.lower() == '1пара'][1:]
     dataframe = dataframe.drop(pairs, axis=1)
-    pairs = dataframe.iloc[2, :].index[dataframe.iloc[2, :] == datetime.time(8, 30)][1:]
+    pairs = dataframe.iloc[2, :].index[dataframe.iloc[2, :] == time(8, 30)][1:]
     dataframe = dataframe.drop(pairs, axis=1)
     dataframe = dataframe.reset_index(drop=True)
     return dataframe
@@ -250,8 +253,8 @@ def get_week_start_date(date: str, difference=-6) -> str:
 
     @return Дата с разницей во времени на difference дней
     """
-    date = datetime.datetime.strptime(date, '%d.%m.%Y')
-    date = date + datetime.timedelta(days=difference)
+    date = datetime.strptime(date, '%d.%m.%Y')
+    date = date + timedelta(days=difference)
     date = date.strftime('%d.%m.%Y')
     return date
 
@@ -266,11 +269,53 @@ def update_informative_table_information(dataframe: pd.DataFrame) -> pd.DataFram
     @return Отформотированная Excel таблица
     """
     dataframe.iloc[0, :] = dataframe.iloc[0, :].fillna(method='ffill')
-    dataframe.iloc[1, :] = dataframe.iloc[1, :].fillna(method='ffill')
-    dataframe.iloc[:, 0] = pd.Series([day.replace(' ', '').lower() if not pd.isna(day) else day for day in dataframe.iloc[:, 0].values])
-    dataframe.iloc[:, 1] = pd.Series([day.replace(' ', '').lower() if not pd.isna(day) else day for day in dataframe.iloc[:, 1].values])
-    dataframe.iloc[:, 2] = pd.Series([day.strftime('%H:%M') if not pd.isna(day) else day for day in dataframe.iloc[:, 2].values])
+    dataframe.iloc[1, :] = pd.Series([group if isinstance(group, str) else np.nan for group in dataframe.iloc[1, :].values]).fillna(method='ffill')
+    dataframe.iloc[:, 0] = pd.Series(
+        [day.replace(' ', '').lower() if not pd.isna(day) else day for day in dataframe.iloc[:, 0].values])
+    dataframe.iloc[:, 1] = pd.Series(
+        [day.replace(' ', '').lower() if not pd.isna(day) else day for day in dataframe.iloc[:, 1].values])
+    dataframe.iloc[:, 2] = pd.Series(
+        [day.strftime('%H:%M') if not pd.isna(day) else day for day in dataframe.iloc[:, 2].values])
     return dataframe
+
+
+def remove_irrelevant_dates(dataframe: pd.DataFrame) -> pd.DataFrame:
+    """Удаление прошедших недель"""
+    rows, _ = get_table_size(dataframe)
+    dataframe.loc[rows] = dataframe.iloc[0, :].copy()
+    dataframe.iloc[-1] = pd.Series([get_key_difference_date(date) if not pd.isna(date) else date for date in dataframe.iloc[-1].values])
+    useless_indexes = dataframe.iloc[-1].index[dataframe.iloc[-1] > 0]
+    dataframe = dataframe.drop(useless_indexes, axis=1)
+    dataframe = dataframe.iloc[:rows, :]
+    dataframe = dataframe.dropna(axis=1, thresh=3)
+    return dataframe
+
+
+def get_key_difference_date(date: str) -> int:
+    """! Get difference between date
+
+    Нахождение разницы между текущей датой и даты начала учебной недели
+
+    @param date Дата начала учебной недели
+
+    @return Количество дней между началом учебной недели и нынешним днем
+    """
+    study_week_date = datetime.strptime(date, '%d.%m.%Y').date()
+    return (datetime.now().date() - study_week_date).days
+
+
+def get_information_for_database_from_table(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
+    """Получение данных из ячейки таблицы"""
+    if pd.isna(dataframe.iloc[i, j]):
+        day = dataframe.iloc[i, 0].capitalize()
+        number = int(dataframe.iloc[i, 1][0])
+        week_date = datetime.strptime(dataframe.iloc[0, j], '%d.%m.%Y').date()
+        group = dataframe.iloc[1, j]
+        teacher, lesson, lesson_type, classroom = np.nan
+    else:
+        print('Ячейка полная дурак')
+    return day, number, week_date, group, teacher, lesson, lesson_type, classroom
+
 
 def main():
     """! Function to test and debug code
@@ -281,21 +326,31 @@ def main():
     sheets = get_sheet_names_from_table(file)
     for sheet in sheets:
         df = read_formatting_excel_file_xls(file, sheet)
-        df.to_excel('test0.xlsx', sheet_name='test', header=False, index=False)
+        # df.to_excel('test0.xlsx', sheet_name='test', header=False, index=False)
         df = delete_uninformative_table_information(df)
+        # df.to_excel('test1.xlsx', sheet_name='test', header=False, index=False)
         df = update_informative_table_information(df)
-        df.to_excel('test.xlsx', sheet_name='test', header=False, index=False)
-        indexes = get_date_indexes(df)
-        print(indexes)
-        result = df.iloc[indexes[0]:indexes[1], :]
-        for index in range(1, len(indexes)-1):
-            temp = df.iloc[indexes[index]:indexes[index + 1], :]
-            temp.reset_index(drop=True, inplace=True)
-            temp.to_excel(f'test{index}.xlsx', sheet_name='test', header=False, index=True)
-            result = pd.merge(result, temp, right_index=True, left_index=True)
-        
-        result.to_excel('tester1.xlsx', sheet_name='test', header=False, index=False)
+        # df.to_excel('test2.xlsx', sheet_name='test', header=False, index=False)
+        import department.gpi as gpi
+        df.iloc[0, :] = pd.Series([gpi.preprocessing_date(el) if not pd.isna(el) else el for el in df.iloc[0, :]])
+        df = remove_irrelevant_dates(df)
+        # df.to_excel('test3.xlsx', sheet_name='test', header=False, index=False)
+        get_information_for_database_from_table(df, 7, 3)
+
+
+
+
+        #indexes = get_date_indexes(df)
+        #print(indexes)
+        #result = df.iloc[indexes[0]:indexes[1], :]
+        #for index in range(1, len(indexes) - 1):
+        #    temp = df.iloc[indexes[index]:indexes[index + 1], :]
+        #    temp.reset_index(drop=True, inplace=True)
+        #    temp.to_excel(f'test1111{index}.xlsx', sheet_name='test', header=False, index=True)
+        #    result = pd.merge(result, temp, right_index=True, left_index=True)
+        #result.to_excel('tester111.xlsx', sheet_name='test', header=False, index=False)
         break
+
 
 if __name__ == '__main__':
     main()

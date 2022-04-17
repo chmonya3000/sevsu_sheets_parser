@@ -28,14 +28,14 @@
 #
 # Copyright (c) 2022 ИРИБ.  All rights reserved.
 
-import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import table_parser as tp
 import pandas as pd
 import re
 
 
-def preprocessing_date(date: str, difference=-6, symbols='0123456789.') -> datetime.datetime:
+def preprocessing_date(date: str, difference=-6, symbols='0123456789.') -> datetime:
     """! Get correct format date of statr study week
 
     Получение корректной даты начала учебной недели
@@ -55,10 +55,13 @@ def preprocessing_date(date: str, difference=-6, symbols='0123456789.') -> datet
             if len(result[-1]) == 2:
                 result[-1] = str(2000 + int(result[-1]))
         else:
-            result = result + [str(datetime.datetime.now().year)]
+            result = result + [str(datetime.now().year)]
         result = '.'.join(result)
-        result = datetime.datetime.strptime(result, '%d.%m.%Y')
-        result = result + datetime.timedelta(days=difference)
+        result = datetime.strptime(result, '%d.%m.%Y')
+        if result.weekday() == 5:
+            result = result + timedelta(days=difference + 1)
+        else:
+            result = result + timedelta(days=difference)
         result = result.strftime('%d.%m.%Y')
     else:
         result = np.nan
@@ -70,10 +73,11 @@ def main():
 
     Эта функция используется для отладки написанного кода
     """
-    file = r'C:\Users\bobbert\Documents\Pythonist\sevsu_sheets_parser\test.xlsx'
+    file = r'C:\Users\bobbert\Documents\Pythonist\sevsu_sheets_parser\test1111.xlsx'
     df = tp.read_raw_excel_file(file, sheet_name='test')
     df.iloc[0, :] = pd.Series([preprocessing_date(el) if not pd.isna(el) else el for el in df.iloc[0, :]])
-    df.to_excel('tester1.xlsx', sheet_name='test', header=False, index=False)
+    df = tp.remove_irrelevant_dates(df)
+    df.to_excel('tester1111.xlsx', sheet_name='test', header=False, index=False)
 
 
 if __name__ == '__main__':
