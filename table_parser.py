@@ -304,13 +304,17 @@ def get_key_difference_date(date: str) -> int:
     return (datetime.now().date() - study_week_date).days
 
 
-def get_information_for_database_from_table(cell: str) -> tuple:
+def get_information_for_database_from_table(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
     """Получение данных из ячейки таблицы"""
-    if not cell:
-        pass
+    if pd.isna(dataframe.iloc[i, j]):
+        day = dataframe.iloc[i, 0].capitalize()
+        number = int(dataframe.iloc[i, 1][0])
+        week_date = datetime.strptime(dataframe.iloc[0, j], '%d.%m.%Y').date()
+        group = dataframe.iloc[1, j]
+        teacher, lesson, lesson_type, classroom = np.nan
     else:
-        pass
-    return cell, cell
+        print('Ячейка полная дурак')
+    return day, number, week_date, group, teacher, lesson, lesson_type, classroom
 
 
 def main():
@@ -331,6 +335,7 @@ def main():
         df.iloc[0, :] = pd.Series([gpi.preprocessing_date(el) if not pd.isna(el) else el for el in df.iloc[0, :]])
         df = remove_irrelevant_dates(df)
         # df.to_excel('test3.xlsx', sheet_name='test', header=False, index=False)
+        get_information_for_database_from_table(df, 7, 3)
 
 
 
