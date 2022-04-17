@@ -3,3 +3,5 @@
 /venv
 /General
 /__pycache__
+/config.py
+/Database/*

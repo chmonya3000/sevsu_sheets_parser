@@ -20,6 +20,8 @@
 #   - Добавлена doxygen документация Нестеренко А.И. 14/04/2022 
 #   - Добавлены методы Савинов В.В. 15/04/2022:
 #       - get_path_schedule_files
+#   - Добавлены методы Нестеренко А.И. 17/04/2022:
+#       - create_file
 #
 # @section author_system Авторы
 # - Савинов В.В.
@@ -28,8 +30,11 @@
 # Copyright (c) 2022 ИРИБ.  All rights reserved.
 
 
+from distutils import extension
 import os
+from numpy import full
 import requests
+from config import *
 
 
 def make_directory(filename: str):
@@ -69,7 +74,7 @@ def get_path_schedule_files() -> list:
     
     @return Список путей до каждого Excel файла
     """
-    initial_path = f'{os.getcwd()}\\General\\'
+    initial_path = f'{PATH_TO_PROJ}\\General\\'
     os.chdir(initial_path)
     final_paths = []
     for root, dirs, files in os.walk(".", topdown=False):
@@ -79,12 +84,30 @@ def get_path_schedule_files() -> list:
     return final_paths
 
 
+def create_file(path: str, filename: str, extension: str) -> str:
+    """! Create file in selected directory
+    
+    Создает файл в указанной директории
+
+    @param path Директория файла
+    @param filename Имя файла
+    @param extension Расширение файла
+
+    @return Абсолютный путь к файлу
+    """
+    full_path = f'{PATH_TO_PROJ}/{path}/{filename}.{extension}'
+    if os.path.exists(full_path):
+        return full_path
+    f = open(full_path, "w")
+    f.close()
+    return full_path
+
 def main():
-    """! Function to test and debug code
+    """! Function to test and debug coWde
 
     Эта функция используется для отладки написанного кода
     """
-    print(get_path_schedule_files())
+    create_file('a','hehe','db')
 
 if __name__ == '__main__':
     main()
