@@ -19,9 +19,11 @@
 # - Нестеренко А.И.
 #
 # Copyright (c) 2022 ИРИБ.  All rights reserved.
+import pandas as pd
 
-from html_parser import get_base_block, get_institute_name, get_files_url, get_schedule_from_first_semester, get_schedule_from_second_semester
-from table_parser import  get_sheet_names_from_table
+from html_parser import get_base_block, get_institute_name, get_files_url, get_schedule_from_first_semester, \
+    get_schedule_from_second_semester
+from table_parser import get_sheet_names_from_table
 from utils import get_extension, get_current_semester
 from utils import transliteration_to_en_from_ru
 
@@ -29,6 +31,7 @@ from utils import transliteration_to_en_from_ru
 URL = "https://www.sevsu.ru/univers/shedule"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0"}
 BASE_URL = "https://www.sevsu.ru"
+
 
 def main():
     """! Function to test and debug code
@@ -55,5 +58,14 @@ def main():
                     print("Пошел нахуй ИФЭУ")
 
 
+
+
+
+def get_union_lists_to_dict(list1: list, list2: list) -> dict:
+    return dict(zip(list1, list2))
+
+
 if __name__ == "__main__":
-    main()
+    list1 = [44, 45, 46, 75, 333, 555, 666, 777]
+    list2 = list(range(8))
+    print(get_union_lists_to_dict(list1, list2))
