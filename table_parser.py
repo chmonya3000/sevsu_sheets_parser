@@ -35,7 +35,7 @@
 # - Нестеренко А.И.
 #
 # Copyright (c) 2022 ИРИБ.  All rights reserved.
-
+import re
 from datetime import datetime, timedelta, time
 import pandas as pd
 import utils
@@ -284,7 +284,7 @@ def remove_irrelevant_dates(dataframe: pd.DataFrame) -> pd.DataFrame:
     rows, _ = get_table_size(dataframe)
     dataframe.loc[rows] = dataframe.iloc[0, :].copy()
     dataframe.iloc[-1] = pd.Series([get_key_difference_date(date) if not pd.isna(date) else date for date in dataframe.iloc[-1].values])
-    useless_indexes = dataframe.iloc[-1].index[dataframe.iloc[-1] > 0]
+    useless_indexes = dataframe.iloc[-1].index[dataframe.iloc[-1] > 7]
     dataframe = dataframe.drop(useless_indexes, axis=1)
     dataframe = dataframe.iloc[:rows, :]
     dataframe = dataframe.dropna(axis=1, thresh=3)
@@ -304,17 +304,99 @@ def get_key_difference_date(date: str) -> int:
     return (datetime.now().date() - study_week_date).days
 
 
+def get_base_cell_information(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
+    """Данная информация об ячейке будет содержаться в таблице со 100 процентной вероятностью"""
+    day = dataframe.loc[i, 'day'].capitalize()
+    number = int(dataframe.loc[i, 'number'][0])
+    week_date = datetime.strptime(dataframe.loc[0, j], '%d.%m.%Y').date()
+    group = dataframe.loc[1, j]
+    return day, number, week_date, group
+
+
 def get_information_for_database_from_table(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
     """Получение данных из ячейки таблицы"""
-    if pd.isna(dataframe.iloc[i, j]):
-        day = dataframe.iloc[i, 0].capitalize()
-        number = int(dataframe.iloc[i, 1][0])
-        week_date = datetime.strptime(dataframe.iloc[0, j], '%d.%m.%Y').date()
-        group = dataframe.iloc[1, j]
-        teacher, lesson, lesson_type, classroom = np.nan
+    if pd.isna(dataframe.loc[i, j]):
+        day, number, week_date, group = get_base_cell_information(dataframe, i, j)
+        teacher = lesson = lesson_type = classroom = np.nan
     else:
-        print('Ячейка полная дурак')
+        day, number, week_date, group = get_base_cell_information(dataframe, i, j)
+        lesson, teacher, lesson_type, classroom = get_lesson_and_name_from_cell(dataframe, i, j)
     return day, number, week_date, group, teacher, lesson, lesson_type, classroom
+
+
+def get_lesson_and_name_from_cell(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
+    """Получение имени и должности преподавателя"""
+    posts = ['асс.', 'ассистент', 'ст.пр.', 'пр.', 'доц.', 'доцент', 'проф.', 'профессор']
+    # получение значения в интересующей нас ячейке
+    base_value = dataframe.loc[i, j]
+    # таблица содержит по 4 столбца данных, 2 из них на подгруппы с парами, вторые это вид занятия и аудитории (нас
+    # интересуют только первые два)
+    if j % 4 == 0:
+        # лично для англа всратого, мб потом перенесу метод в лично ГПИ
+        lesson_type = dataframe.loc[i, j + 2]
+        if base_value == lesson_type or pd.isna(lesson_type):
+            pattern = r'[а-яёА-ЯЁ].[а-яёА-ЯЁ].'
+            index = 0
+            for substring in re.finditer(pattern, base_value):
+                index = substring.start()
+            name = base_value[:index].strip()
+            classroom = base_value[index:].strip()
+            lesson = 'Иностранный язык'
+            lesson_type = 'ПЗ'
+        else:
+            lesson_type = str(lesson_type).upper()
+            classroom = str(dataframe.loc[i, j + 3]).replace(' ', '').replace('.', ',').replace('-', '').upper()
+            index = 0
+            for post in posts:
+                if post in base_value:
+                    index = base_value.find(post)
+                    break
+            lesson = base_value[:index].strip()
+            name = base_value[index:].strip()
+            if '(' in name:
+                index = name.rfind('(')
+                name = name[:index].strip()
+    else:
+        # лично для англа всратого, мб потом перенесу метод в лично ГПИ
+        lesson_type = dataframe.loc[i, j + 1]
+        if base_value == lesson_type or pd.isna(lesson_type):
+            pattern = r'[а-яёА-ЯЁ].[а-яёА-ЯЁ].'
+            index = 0
+            for substring in re.finditer(pattern, base_value):
+                index = substring.start()
+            name = base_value[:index].strip()
+            classroom = base_value[index:].strip()
+            lesson = 'Иностранный язык'
+            lesson_type = 'ПЗ'
+        else:
+            lesson_type = str(dataframe.loc[i, j + 1]).upper()
+            classroom = str(dataframe.loc[i, j + 2]).replace(' ', '').replace('.', ',').replace('-', '').upper()
+            index = 0
+            for post in posts:
+                if post in base_value:
+                    index = base_value.find(post)
+                    break
+            lesson = base_value[:index].strip()
+            name = base_value[index:].strip()
+            if '(' in name:
+                index = name.rfind('(')
+                name = name[:index].strip()
+    return lesson, name, lesson_type, classroom
+
+
+def update_dataframe_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
+    """Обновление индексов столбцов в таблице"""
+    _, columns = get_table_size(dataframe)
+    dataframe = dataframe.rename(columns=dict(zip(dataframe.columns[:3], ('day', 'number', 'time'))))
+    dataframe = dataframe.rename(columns=dict(zip(dataframe.columns[3:], range(columns-3))))
+    return dataframe
+
+
+def test_get_useful_columns(dataframe: pd.DataFrame) -> list:
+    """Выбрать только нужные столбцы с данными"""
+    indexes = dataframe.columns[3:]
+    indexes = [indexes[i] for i in range(len(indexes)) if i % 4 == 0 or i % 4 == 1]
+    return indexes
 
 
 def main():
@@ -334,8 +416,13 @@ def main():
         import department.gpi as gpi
         df.iloc[0, :] = pd.Series([gpi.preprocessing_date(el) if not pd.isna(el) else el for el in df.iloc[0, :]])
         df = remove_irrelevant_dates(df)
-        # df.to_excel('test3.xlsx', sheet_name='test', header=False, index=False)
-        get_information_for_database_from_table(df, 7, 3)
+        df = update_dataframe_columns(df)
+        # df.to_excel('test3.xlsx', sheet_name='test', header=True, index=False)
+        indexes = test_get_useful_columns(df)
+        # print(indexes)
+        for i in df.index[2:]:
+            for j in indexes:
+                print(get_information_for_database_from_table(df, i, j))
 
 
 
