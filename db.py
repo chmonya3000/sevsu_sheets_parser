@@ -14,6 +14,14 @@
 #
 # @section list_of_changes_db Список изменений
 #   - Файл создан Нестеренко А.И. 17/04/2022
+#   Добавлены методы:
+#       - SQL.__init__
+#       - SQL.create_table_request
+#       - SQL.insert_datas_to_db
+#       - SQL.return_all_from_db
+#       - SQL.__craete_db_file
+#       - SQL.__create_table
+#       - SQL.create_db
 #
 # @section author_db Авторы
 # - Савинов В.В.
@@ -44,19 +52,21 @@ class SQL:
         ## День недели (максимум 16 символов)
         self.day = NULL
         ## Время пары (максимум 8 символов)
-        self.lesson_time = NULL
+        self.lesson_number = NULL
         ## Название пары (максимум 128 символов)
         self.lesson = NULL
         ## Тип пары (максимум 4 символа)
         self.lesson_type = NULL
-        ## Аудитория (макс 8 символов)
+        ## Аудитория (максимум 8 символов)
         self.auditorium = NULL
-        ## Номер недели (макс 32 символов)
+        ## Номер недели (максимум 32 символов)
         self.week_number = NULL
-        ## Название группы (макс 16 символов)
+        ## Название группы (максимум 16 символов)
         self.group_name = NULL
-        ## Имя преподавателя (макс 32 символов)
+        ## Имя преподавателя (максимум 32 символов)
         self.teacher_name = NULL
+
+        self.path = NULL
 
     def create_table_request(name: str, **kwargs: dict) -> str:
         """! Create table request
@@ -74,7 +84,7 @@ class SQL:
         request = request + ');'
         return request
 
-    def insert_datas_to_db(name: str, **kwargs: dict) -> str:
+    def insert_datas_to_db(self, name: str, **kwargs: dict) -> str:
         """! Insert datas to database
         
         Добавить запись в таблицу
@@ -93,7 +103,7 @@ class SQL:
         request = request[:-2] + ');'
         return request
 
-    def return_all_from_db(name: str) -> str:
+    def return_all_from_db(self, name: str) -> str:
         """! Return all values from table
         
         Возвращает все записи с таблицы
@@ -122,13 +132,23 @@ class SQL:
         """
         conn = sqlite3.connect(db_file)
         cur = conn.cursor()
-        cur.execute(SQL.create_table_request('pair',
-         day='VARCHAR(16)', lesson_time='VARCHAR(8)', lesson='VARCHAR(128)',
-         lesson_type='VARCHAR(4)', auditorium='VARCHAR(8)', week_number='VARCHAR(32)',
-         group_name='VARCHAR(16)', teacher_name='VARCHAR(32)'))
+        cur.execute(SQL.create_table_request('pair', day='VARCHAR(16)', lesson_number='INT', week_number='VARCHAR(32)', group_name='VARCHAR(16)', teacher_name='VARCHAR(64)', lesson='VARCHAR(128)', lesson_type='VARCHAR(4)', auditorium='VARCHAR(8)'))
+        conn.commit()
 
-    @staticmethod
-    def create_db() -> Boolean:
+
+    def execute_requests(self, request: str):
+        conn = sqlite3.connect(self.path)
+        cur = conn.cursor()
+        cur.execute(request)
+        conn.commit()
+
+    def return_info(self, request: str):
+        conn = sqlite3.connect(self.path)
+        cur = conn.cursor()
+        cur.execute(request)
+        return cur.fetchall()
+
+    def create_db(self) -> Boolean:
         """! Create whole database with all needed tables
         
         Создает базу данных со всеми нужными таблицами
@@ -137,8 +157,8 @@ class SQL:
         False если есть ошибки при создании
         """
         try:
-            path = SQL.__craete_db_file()
-            SQL.__create_table(path)
+            self.path = SQL.__craete_db_file()
+            SQL.__create_table(self.path)
             return True
         except:
             return False
@@ -154,6 +174,10 @@ def main():
     """
 
     SQL.create_db()
+    a = SQL.insert_datas_to_db('pair', day='1', lesson_number=2, week_number='3', group_name='4', teacher_name='5', lesson='6', lesson_type='7', auditorium='8')
+    SQL.execute_requests(a)
+    a = SQL.return_all_from_db('pair')
+    print(SQL.return_info(a))
 
 if __name__ == "__main__":
     main()

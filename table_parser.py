@@ -35,6 +35,7 @@
 # - Нестеренко А.И.
 #
 # Copyright (c) 2022 ИРИБ.  All rights reserved.
+from calendar import week
 import re
 from datetime import datetime, timedelta, time
 import pandas as pd
@@ -42,6 +43,7 @@ import utils
 import xlrd
 import numpy as np
 import openpyxl
+import db
 
 
 def get_sheet_names_from_table(filename: str) -> list:
@@ -420,9 +422,15 @@ def main():
         # df.to_excel('test3.xlsx', sheet_name='test', header=True, index=False)
         indexes = test_get_useful_columns(df)
         # print(indexes)
+        test = db.SQL()
+        test.create_db()
         for i in df.index[2:]:
             for j in indexes:
-                print(get_information_for_database_from_table(df, i, j))
+                a = get_information_for_database_from_table(df, i, j)
+                request = test.insert_datas_to_db('pair', day=a[0], lesson_number=a[1], week_number=a[2], group_name=a[3], teacher_name=a[4], lesson=a[5], lesson_type=a[6], auditorium=a[7])
+                test.execute_requests(request)
+        print(test.return_info(test.return_all_from_db('pair')))
+
 
 
 
