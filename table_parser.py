@@ -29,6 +29,13 @@
 #       - delete_uninformative_table_information
 #       - get_week_start_date
 #       - update_informative_table_information
+#   - Добавлены методы Савинов В.В. 20/04/2022:
+#       - remove_irrelevant_dates
+#       - get_base_cell_information
+#       - get_information_for_database_from_table
+#       - get_lesson_and_name_from_cell
+#       - update_dataframe_columns
+#       - test_get_useful_columns
 #
 # @section author_utils Авторы
 # - Савинов В.В.
@@ -282,7 +289,14 @@ def update_informative_table_information(dataframe: pd.DataFrame) -> pd.DataFram
 
 
 def remove_irrelevant_dates(dataframe: pd.DataFrame) -> pd.DataFrame:
-    """Удаление прошедших недель"""
+    """! Delete irrelevant info
+
+    Удаление прошедших недель
+    
+    @param dataframe Excel таблица
+    
+    @return Отформотированная Excel таблица
+    """
     rows, _ = get_table_size(dataframe)
     dataframe.loc[rows] = dataframe.iloc[0, :].copy()
     dataframe.iloc[-1] = pd.Series([get_key_difference_date(date) if not pd.isna(date) else date for date in dataframe.iloc[-1].values])
@@ -307,7 +321,16 @@ def get_key_difference_date(date: str) -> int:
 
 
 def get_base_cell_information(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
-    """Данная информация об ячейке будет содержаться в таблице со 100 процентной вероятностью"""
+    """! Get base info
+    
+    Данная информация об ячейке будет содержаться в таблице со 100 процентной вероятностью
+
+    @param dataframe Excel таблица
+    @param i Строка
+    @param j Столбец
+
+    @return Кортеж с основной информацией о паре
+    """
     day = dataframe.loc[i, 'day'].capitalize()
     number = int(dataframe.loc[i, 'number'][0])
     week_date = datetime.strptime(dataframe.loc[0, j], '%d.%m.%Y').date()
@@ -316,7 +339,16 @@ def get_base_cell_information(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
 
 
 def get_information_for_database_from_table(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
-    """Получение данных из ячейки таблицы"""
+    """! Get side info
+    
+    Получение всех данных из ячейки таблицы
+
+    @param dataframe Excel таблица
+    @param i Строка
+    @param j Столбец
+
+    @return Кортеж с всей информацией о паре
+    """
     if pd.isna(dataframe.loc[i, j]):
         day, number, week_date, group = get_base_cell_information(dataframe, i, j)
         teacher = lesson = lesson_type = classroom = np.nan
@@ -327,7 +359,16 @@ def get_information_for_database_from_table(dataframe: pd.DataFrame, i: int, j: 
 
 
 def get_lesson_and_name_from_cell(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
-    """Получение имени и должности преподавателя"""
+    """! Get lessons info
+    
+    Получение имени и должности преподавателя
+
+    @param dataframe Excel таблица
+    @param i Строка
+    @param j Столбец
+
+    @return Кортеж с дополнительной информацией о паре
+    """
     posts = ['асс.', 'ассистент', 'ст.пр.', 'пр.', 'доц.', 'доцент', 'проф.', 'профессор']
     # получение значения в интересующей нас ячейке
     base_value = dataframe.loc[i, j]
@@ -387,7 +428,14 @@ def get_lesson_and_name_from_cell(dataframe: pd.DataFrame, i: int, j: int) -> tu
 
 
 def update_dataframe_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
-    """Обновление индексов столбцов в таблице"""
+    """! Update dataframe colums
+
+    Обновление индексов столбцов в таблице
+    
+    @param dataframe Excel таблица
+    
+    @return Excel таблица с обновленными индексами столбцов
+    """
     _, columns = get_table_size(dataframe)
     dataframe = dataframe.rename(columns=dict(zip(dataframe.columns[:3], ('day', 'number', 'time'))))
     dataframe = dataframe.rename(columns=dict(zip(dataframe.columns[3:], range(columns-3))))
@@ -395,7 +443,14 @@ def update_dataframe_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
 
 
 def test_get_useful_columns(dataframe: pd.DataFrame) -> list:
-    """Выбрать только нужные столбцы с данными"""
+    """! Get useful columns
+
+    Выбрать только нужные столбцы с данными
+    
+    @param dataframe Excel таблица
+    
+    @return Список индексов столбцов с полезной информацией
+    """
     indexes = dataframe.columns[3:]
     indexes = [indexes[i] for i in range(len(indexes)) if i % 4 == 0 or i % 4 == 1]
     return indexes

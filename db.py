@@ -22,6 +22,9 @@
 #       - SQL.__craete_db_file
 #       - SQL.__create_table
 #       - SQL.create_db
+#   - Добавлены методы Нестеренко А.И. 20/04/2022:
+#       - SQL.execute_requests
+#       - SQL.return_info
 #
 # @section author_db Авторы
 # - Савинов В.В.
@@ -137,16 +140,30 @@ class SQL:
 
 
     def execute_requests(self, request: str):
+        """! Execute INSERT method
+
+        Сохраняет данные в таблицу по указанному SQL запросу
+
+        @param request INSERT запрос
+        """
         conn = sqlite3.connect(self.path)
         cur = conn.cursor()
         cur.execute(request)
         conn.commit()
 
-    def return_info(self, request: str):
+    def return_info(self, request: str) -> list:
+        """! Execute SELECT method
+
+        Возвращает инфу с таблицы по указанному запросу
+
+        @param request SELECT запрос
+
+        @return Список со всеми подходящими под запрос записями
+        """
         conn = sqlite3.connect(self.path)
         cur = conn.cursor()
         cur.execute(request)
-        return cur.fetchall()
+        return type(cur.fetchall())
 
     def create_db(self) -> Boolean:
         """! Create whole database with all needed tables
