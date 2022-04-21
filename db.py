@@ -117,14 +117,14 @@ class SQL:
         """
         return f'SELECT * FROM {name};'
 
-    def __craete_db_file() -> str:
+    def __craete_db_file(self) -> str:
         """! Create database file
         
         Создает файл базы данных
 
         @return Абсолютный путь к созданной базе данных
         """
-        return system.create_file('Database','test','sqlite3')
+        return system.create_file('Database', 'test', 'sqlite3')
 
     def __create_table(db_file: str):
         """! Create table in database
@@ -135,11 +135,12 @@ class SQL:
         """
         conn = sqlite3.connect(db_file)
         cur = conn.cursor()
-        cur.execute(SQL.create_table_request('pair', day='VARCHAR(16)', lesson_number='INT', week_number='VARCHAR(32)', group_name='VARCHAR(16)', teacher_name='VARCHAR(64)', lesson='VARCHAR(128)', lesson_type='VARCHAR(4)', auditorium='VARCHAR(8)'))
+        cur.execute(SQL.create_table_request('pair', day='VARCHAR(16)', lesson_number='INT', week_number='VARCHAR(32)',
+                                             group_name='VARCHAR(16)', teacher_name='VARCHAR(64)',
+                                             lesson='VARCHAR(128)', lesson_type='VARCHAR(4)', auditorium='VARCHAR(8)'))
         conn.commit()
 
-
-    def execute_requests(self, request: str):
+    def execute_requests(self, request: str) -> None:
         """! Execute INSERT method
 
         Сохраняет данные в таблицу по указанному SQL запросу
@@ -174,14 +175,11 @@ class SQL:
         False если есть ошибки при создании
         """
         try:
-            self.path = SQL.__craete_db_file()
+            self.path = SQL.__craete_db_file(self)
             SQL.__create_table(self.path)
             return True
         except:
             return False
-
-
-
 
 
 def main():
@@ -191,10 +189,12 @@ def main():
     """
 
     SQL.create_db()
-    a = SQL.insert_datas_to_db('pair', day='1', lesson_number=2, week_number='3', group_name='4', teacher_name='5', lesson='6', lesson_type='7', auditorium='8')
+    a = SQL.insert_datas_to_db('pair', day='1', lesson_number=2, week_number='3', group_name='4', teacher_name='5',
+                               lesson='6', lesson_type='7', auditorium='8')
     SQL.execute_requests(a)
     a = SQL.return_all_from_db('pair')
     print(SQL.return_info(a))
+
 
 if __name__ == "__main__":
     main()

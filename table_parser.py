@@ -51,6 +51,9 @@ import xlrd
 import numpy as np
 import openpyxl
 import db
+from time import time as t
+import system
+import department.gpi as gpi
 
 
 def get_sheet_names_from_table(filename: str) -> list:
@@ -278,7 +281,8 @@ def update_informative_table_information(dataframe: pd.DataFrame) -> pd.DataFram
     @return Отформотированная Excel таблица
     """
     dataframe.iloc[0, :] = dataframe.iloc[0, :].fillna(method='ffill')
-    dataframe.iloc[1, :] = pd.Series([group if isinstance(group, str) else np.nan for group in dataframe.iloc[1, :].values]).fillna(method='ffill')
+    dataframe.iloc[1, :] = pd.Series(
+        [group if isinstance(group, str) else np.nan for group in dataframe.iloc[1, :].values]).fillna(method='ffill')
     dataframe.iloc[:, 0] = pd.Series(
         [day.replace(' ', '').lower() if not pd.isna(day) else day for day in dataframe.iloc[:, 0].values])
     dataframe.iloc[:, 1] = pd.Series(
@@ -299,7 +303,8 @@ def remove_irrelevant_dates(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     rows, _ = get_table_size(dataframe)
     dataframe.loc[rows] = dataframe.iloc[0, :].copy()
-    dataframe.iloc[-1] = pd.Series([get_key_difference_date(date) if not pd.isna(date) else date for date in dataframe.iloc[-1].values])
+    dataframe.iloc[-1] = pd.Series(
+        [get_key_difference_date(date) if not pd.isna(date) else date for date in dataframe.iloc[-1].values])
     useless_indexes = dataframe.iloc[-1].index[dataframe.iloc[-1] > 7]
     dataframe = dataframe.drop(useless_indexes, axis=1)
     dataframe = dataframe.iloc[:rows, :]
@@ -320,16 +325,16 @@ def get_key_difference_date(date: str) -> int:
     return (datetime.now().date() - study_week_date).days
 
 
-def get_base_cell_information(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
+def get_base_lesson_information_from_cell(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
     """! Get base info
     
-    Данная информация об ячейке будет содержаться в таблице со 100 процентной вероятностью
+    Получение основной информации об ячейке (содержится в таблице со 100 процентной вероятностью)
 
     @param dataframe Excel таблица
     @param i Строка
     @param j Столбец
 
-    @return Кортеж с основной информацией о паре
+    @return Кортеж с основной информацией о паре (день недели, номер пары, дата начала учебной недели, группа)
     """
     day = dataframe.loc[i, 'day'].capitalize()
     number = int(dataframe.loc[i, 'number'][0])
@@ -350,32 +355,28 @@ def get_information_for_database_from_table(dataframe: pd.DataFrame, i: int, j: 
     @return Кортеж с всей информацией о паре
     """
     if pd.isna(dataframe.loc[i, j]):
-        day, number, week_date, group = get_base_cell_information(dataframe, i, j)
+        day, number, week_date, group = get_base_lesson_information_from_cell(dataframe, i, j)
         teacher = lesson = lesson_type = classroom = np.nan
     else:
-        day, number, week_date, group = get_base_cell_information(dataframe, i, j)
-        lesson, teacher, lesson_type, classroom = get_lesson_and_name_from_cell(dataframe, i, j)
+        day, number, week_date, group = get_base_lesson_information_from_cell(dataframe, i, j)
+        lesson, teacher, lesson_type, classroom = get_more_lesson_information_from_cell(dataframe, i, j)
     return day, number, week_date, group, teacher, lesson, lesson_type, classroom
 
 
-def get_lesson_and_name_from_cell(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
+def get_more_lesson_information_from_cell(dataframe: pd.DataFrame, i: int, j: int) -> tuple:
     """! Get lessons info
     
-    Получение имени и должности преподавателя
+    Получение дополнительной информации об ячейке
 
     @param dataframe Excel таблица
     @param i Строка
     @param j Столбец
 
-    @return Кортеж с дополнительной информацией о паре
+    @return Кортеж с дополнительной информацией о паре (имя и должность преподавателя, тип занятия, аудитория)
     """
     posts = ['асс.', 'ассистент', 'ст.пр.', 'пр.', 'доц.', 'доцент', 'проф.', 'профессор']
-    # получение значения в интересующей нас ячейке
     base_value = dataframe.loc[i, j]
-    # таблица содержит по 4 столбца данных, 2 из них на подгруппы с парами, вторые это вид занятия и аудитории (нас
-    # интересуют только первые два)
     if j % 4 == 0:
-        # лично для англа всратого, мб потом перенесу метод в лично ГПИ
         lesson_type = dataframe.loc[i, j + 2]
         if base_value == lesson_type or pd.isna(lesson_type):
             pattern = r'[а-яёА-ЯЁ].[а-яёА-ЯЁ].'
@@ -400,7 +401,6 @@ def get_lesson_and_name_from_cell(dataframe: pd.DataFrame, i: int, j: int) -> tu
                 index = name.rfind('(')
                 name = name[:index].strip()
     else:
-        # лично для англа всратого, мб потом перенесу метод в лично ГПИ
         lesson_type = dataframe.loc[i, j + 1]
         if base_value == lesson_type or pd.isna(lesson_type):
             pattern = r'[а-яёА-ЯЁ].[а-яёА-ЯЁ].'
@@ -428,7 +428,7 @@ def get_lesson_and_name_from_cell(dataframe: pd.DataFrame, i: int, j: int) -> tu
 
 
 def update_dataframe_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
-    """! Update dataframe colums
+    """! Update dataframe columns
 
     Обновление индексов столбцов в таблице
     
@@ -438,7 +438,7 @@ def update_dataframe_columns(dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     _, columns = get_table_size(dataframe)
     dataframe = dataframe.rename(columns=dict(zip(dataframe.columns[:3], ('day', 'number', 'time'))))
-    dataframe = dataframe.rename(columns=dict(zip(dataframe.columns[3:], range(columns-3))))
+    dataframe = dataframe.rename(columns=dict(zip(dataframe.columns[3:], range(columns - 3))))
     return dataframe
 
 
@@ -456,50 +456,67 @@ def test_get_useful_columns(dataframe: pd.DataFrame) -> list:
     return indexes
 
 
+def get_formatting_table(filename: str, sheet: str) -> pd.DataFrame:
+    """Получение обработанной Excel таблицы"""
+    df = read_formatting_excel_file_xls(filename, sheet)
+    df = delete_uninformative_table_information(df)
+    df = update_informative_table_information(df)
+    df.iloc[0, :] = pd.Series([gpi.preprocessing_date(el) if not pd.isna(el) else el for el in df.iloc[0, :]])
+    df = remove_irrelevant_dates(df)
+    df = update_dataframe_columns(df)
+    return df
+
+
+def merge_file_tables(filename: str, sheets: list) -> pd.DataFrame:
+    """Объединение таблиц, находящихся на одном листе"""
+    dfs = [get_formatting_table(filename, sheet) for sheet in sheets]
+    df = pd.concat(dfs, axis=1, ignore_index=True)
+    indexes = df.iloc[0, :].index[pd.isna(df.iloc[0, :])][3:]
+    df = df.drop(indexes, axis=1)
+    df = update_dataframe_columns(df)
+    return df
+
+
 def main():
     """! Function to test and debug code
 
     Эта функция используется для отладки написанного кода
     """
+    # begin = t()
+    system.make_directory('test')
     file = r'General\Gumanitarno-pedagogicheskij institut\1.xls'
     sheets = get_sheet_names_from_table(file)
-    for sheet in sheets:
-        df = read_formatting_excel_file_xls(file, sheet)
-        # df.to_excel('test0.xlsx', sheet_name='test', header=False, index=False)
-        df = delete_uninformative_table_information(df)
-        # df.to_excel('test1.xlsx', sheet_name='test', header=False, index=False)
-        df = update_informative_table_information(df)
-        # df.to_excel('test2.xlsx', sheet_name='test', header=False, index=False)
-        import department.gpi as gpi
-        df.iloc[0, :] = pd.Series([gpi.preprocessing_date(el) if not pd.isna(el) else el for el in df.iloc[0, :]])
-        df = remove_irrelevant_dates(df)
-        df = update_dataframe_columns(df)
-        # df.to_excel('test3.xlsx', sheet_name='test', header=True, index=False)
+    begin = t()
+    # result = merge_file_tables(file, sheets)
+    # result.to_excel(f'test/test.xlsx', sheet_name='test', header=True, index=False)
+    for number, sheet in enumerate(sheets):
+        df = get_formatting_table(file, sheet)
+        # df.to_excel(f'test/{number}_test.xlsx', sheet_name='test', header=False, index=False)
         indexes = test_get_useful_columns(df)
         # print(indexes)
         test = db.SQL()
         test.create_db()
-        for i in df.index[2:]:
-            for j in indexes:
-                a = get_information_for_database_from_table(df, i, j)
-                request = test.insert_datas_to_db('pair', day=a[0], lesson_number=a[1], week_number=a[2], group_name=a[3], teacher_name=a[4], lesson=a[5], lesson_type=a[6], auditorium=a[7])
+        for row_index in df.index[2:]:
+            for column_index in indexes:
+                a = get_information_for_database_from_table(df, row_index, column_index)
+                request = test.insert_datas_to_db('pair', day=a[0], lesson_number=a[1], week_number=a[2],
+                                                  group_name=a[3], teacher_name=a[4], lesson=a[5], lesson_type=a[6],
+                                                  auditorium=a[7])
+                print(type(request))
                 test.execute_requests(request)
-        print(test.return_info(test.return_all_from_db('pair')))
+        # print(test.return_info(test.return_all_from_db('pair')))
+    end = t()
+    print(f'Выполнение скрипта заняло {round(end - begin, 2)}')
 
-
-
-
-
-        #indexes = get_date_indexes(df)
-        #print(indexes)
-        #result = df.iloc[indexes[0]:indexes[1], :]
-        #for index in range(1, len(indexes) - 1):
+        # indexes = get_date_indexes(df)
+        # print(indexes)
+        # result = df.iloc[indexes[0]:indexes[1], :]
+        # for index in range(1, len(indexes) - 1):
         #    temp = df.iloc[indexes[index]:indexes[index + 1], :]
         #    temp.reset_index(drop=True, inplace=True)
         #    temp.to_excel(f'test1111{index}.xlsx', sheet_name='test', header=False, index=True)
         #    result = pd.merge(result, temp, right_index=True, left_index=True)
-        #result.to_excel('tester111.xlsx', sheet_name='test', header=False, index=False)
-        break
+        # result.to_excel('tester111.xlsx', sheet_name='test', header=False, index=False)
 
 
 if __name__ == '__main__':
